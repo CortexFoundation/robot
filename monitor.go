@@ -512,7 +512,6 @@ func (m *Monitor) exit() {
 func (m *Monitor) Stop() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.fs.Close()
 	//m.closeOnce.Do(func() {
 	if m.terminated.Load() {
 		return
@@ -529,9 +528,9 @@ func (m *Monitor) Stop() {
 	//	log.Error("Monitor Fs Manager closed", "error", err)
 	//}
 
-	//if err := m.fs.Close(); err != nil {
-	//	log.Error("Monitor File Storage closed", "error", err)
-	//}
+	if err := m.fs.Close(); err != nil {
+		log.Error("Monitor File Storage closed", "error", err)
+	}
 	log.Info("Fs listener synchronizing closed")
 	//})
 }
