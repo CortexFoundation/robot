@@ -188,7 +188,7 @@ func (m *Monitor) loadHistory() error {
 }
 
 func (m *Monitor) download(k string, v uint64) {
-	if m.mode != params.LAZY {
+	if m.mode != params.LAZY && m.callback != nil {
 		task := types.NewBitsFlow(k, v)
 		m.callback <- task
 	}
