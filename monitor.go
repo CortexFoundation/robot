@@ -169,6 +169,10 @@ func (m *Monitor) DB() *backend.ChainDB {
 	return m.fs
 }
 
+func (m *Monitor) Callback() chan any {
+	return m.callback
+}
+
 func (m *Monitor) loadHistory() error {
 	torrents, _ := m.fs.InitTorrents()
 	if m.mode != params.LAZY {
