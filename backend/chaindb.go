@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the CortexTheseus library. If not, see <http://www.gnu.org/licenses/>.
 
-package robot
+package backend
 
 import (
 	"encoding/binary"
@@ -69,6 +69,8 @@ type ChainDB struct {
 	torrents map[string]uint64
 	lock     sync.RWMutex
 	//rootCache *lru.Cache
+
+	initOnce sync.Once
 }
 
 func NewChainDB(config *params.Config) (*ChainDB, error) {
@@ -100,7 +102,7 @@ func NewChainDB(config *params.Config) (*ChainDB, error) {
 
 	//fs.rootCache, _ = lru.New(8)
 
-	if err := fs.initBlockNumber(); err != nil {
+	/*if err := fs.initBlockNumber(); err != nil {
 		log.Error("Init block error", "err", err)
 		return nil, err
 	}
@@ -122,13 +124,38 @@ func NewChainDB(config *params.Config) (*ChainDB, error) {
 	if err := fs.initID(); err != nil {
 		log.Error("Init node id error", "err", err)
 		return nil, err
-	}
+	}*/
 
 	//fs.history()
 
 	log.Info("Storage ID generated", "id", fs.id, "version", fs.version)
 
 	return fs, nil
+}
+
+func (fs *ChainDB) Init() (err error) {
+	fs.initOnce.Do(func() {
+		if err = fs.initBlockNumber(); err != nil {
+			log.Error("Init block error", "err", err)
+			//return err
+		}
+
+		if err = fs.initFiles(); err != nil {
+			log.Error("Init files error", "err", err)
+			//return err
+		}
+		if err = fs.initMerkleTree(); err != nil {
+			log.Error("Init mkt error", "err", err)
+			//return err
+		}
+
+		if err = fs.initID(); err != nil {
+			log.Error("Init node id error", "err", err)
+			//return err
+		}
+	})
+
+	return
 }
 
 func (fs *ChainDB) Files() []*types.FileInfo {
@@ -196,6 +223,10 @@ func (fs *ChainDB) Metrics() time.Duration {
 
 // Make sure the block group is increasing by number
 func (fs *ChainDB) addLeaf(block *types.Block, mes bool, dup bool) error {
+	if fs.tree == nil {
+		return errors.New("mkt is nil")
+	}
+
 	number := block.Number
 	leaf := merkletree.NewContent(block.Hash.String(), number)
 
@@ -233,6 +264,9 @@ func (fs *ChainDB) addLeaf(block *types.Block, mes bool, dup bool) error {
 		if err := fs.tree.AddNode(leaf); err != nil {
 			return err
 		}
+
+		// TODO
+
 		if number > fs.checkPoint {
 			fs.checkPoint = number
 		}
@@ -245,6 +279,9 @@ func (fs *ChainDB) addLeaf(block *types.Block, mes bool, dup bool) error {
 }
 
 func (fs *ChainDB) Root() common.Hash {
+	if fs.tree == nil {
+		return common.EmptyHash
+	}
 	return common.BytesToHash(fs.tree.MerkleRoot())
 }
 
@@ -698,8 +735,10 @@ func (fs *ChainDB) Flush() error {
 }
 
 func (fs *ChainDB) SkipPrint() {
-	var str string
-	var from uint64
+	var (
+		str  string
+		from uint64
+	)
 	for _, b := range fs.blocks {
 		//		if b.Number < 395964 {
 		//			continue
@@ -799,13 +838,10 @@ func (fs *ChainDB) GetTorrentProgress(ih string) (progress uint64, err error) {
 		return 0, err
 	}
 
-	fs.torrents[ih] = progress
-
 	return progress, nil
 }
 
 func (fs *ChainDB) InitTorrents() (map[string]uint64, error) {
-	//torrents := make(map[string]uint64)
 	err := fs.db.Update(func(tx *bolt.Tx) error {
 		if buk, err := tx.CreateBucketIfNotExists([]byte(TORRENT_ + fs.version)); err != nil {
 			return err
@@ -818,7 +854,7 @@ func (fs *ChainDB) InitTorrents() (map[string]uint64, error) {
 				}
 				fs.torrents[string(k)] = size
 			}
-			log.Info("Torrent initializing ... ...", "torrents", len(fs.torrents))
+			log.Debug("Torrent initializing ... ...", "torrents", len(fs.torrents))
 			return nil
 		}
 	})
