@@ -311,7 +311,7 @@ func (m *Monitor) buildConnection(ipcpath string, rpcuri string) (*rpc.Client, e
 			}
 		}
 	} else {
-		log.Warn("IPC is emptyl")
+		log.Warn("IPC is empty")
 	}
 
 	cl, err := rpc.Dial(rpcuri)
