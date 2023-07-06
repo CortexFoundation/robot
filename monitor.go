@@ -115,12 +115,13 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		//taskCh:        make(chan *types.Block, batch),
 		//start: mclock.Now(),
 	}
-	fs_, err := backend.NewChainDB(flag)
-	if err != nil {
+
+	if fs_, err := backend.NewChainDB(flag); err != nil {
 		log.Error("file storage failed", "err", err)
 		return nil, err
+	} else {
+		m.fs = fs_
 	}
-	m.fs = fs_
 	m.lastNumber.Store(0)
 	m.currentNumber.Store(0)
 	m.terminated.Store(false)
@@ -290,7 +291,6 @@ func (m *Monitor) indexInit() error {
 
 // SetConnection method builds connection to remote or local communicator.
 func (m *Monitor) buildConnection(ipcpath string, rpcuri string) (*rpc.Client, error) {
-
 	log.Debug("Building connection", "terminated", m.terminated.Load())
 
 	if len(ipcpath) > 0 {
@@ -311,7 +311,7 @@ func (m *Monitor) buildConnection(ipcpath string, rpcuri string) (*rpc.Client, e
 			}
 		}
 	} else {
-		log.Warn("IPC is empty")
+		log.Warn("IPC is empty, try remote RPC instead")
 	}
 
 	cl, err := rpc.Dial(rpcuri)
