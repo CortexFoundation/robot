@@ -23,6 +23,7 @@ func main() {
 	if m, err := robot.New(cfg, true, false, false, nil); err != nil {
 		panic(err)
 	} else {
+		m.SwitchService(robot.SRV_PRINT)
 		if err := m.Start(); err != nil {
 			log.Error("start failed", "err", err)
 			panic(err)
