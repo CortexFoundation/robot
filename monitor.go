@@ -83,6 +83,8 @@ type Monitor struct {
 	lock sync.RWMutex
 
 	callback chan any
+
+	srv atomic.Int32
 }
 
 // NewMonitor creates a new instance of monitor.
@@ -222,7 +224,7 @@ func (m *Monitor) indexCheck() error {
 				//	return err
 				//}
 			}
-			log.Warn("Fs storage is reloading ...", "name", m.ckp.Name, "number", checkpoint.TfsCheckPoint, "version", common.BytesToHash(version), "checkpoint", checkpoint.TfsRoot, "blocks", len(m.fs.Blocks()), "files", len(m.fs.Files()), "txs", m.fs.Txs(), "lastNumber", m.lastNumber.Load(), "last in db", m.fs.LastListenBlockNumber())
+			log.Warn("Fs storage is reloading ...", "name", m.ckp.Name, "number", checkpoint.TfsCheckPoint, "version", common.BytesToHash(version), "checkpoint", checkpoint.TfsRoot, "blocks", len(m.fs.Blocks()), "files", len(m.fs.Files()), "txs", m.fs.Txs(), "lastNumber", m.lastNumber.Load(), "last", m.fs.LastListenBlockNumber())
 		} else {
 			log.Info("Fs storage version check passed", "name", m.ckp.Name, "number", checkpoint.TfsCheckPoint, "version", common.BytesToHash(version), "blocks", len(m.fs.Blocks()), "files", len(m.fs.Files()), "txs", m.fs.Txs())
 		}
@@ -753,6 +755,8 @@ func (m *Monitor) syncLastBlock() uint64 {
 				m.lastNumber.Store(i - 1)
 				return 0
 			}
+
+			// batch blocks operation according service category
 			for _, rpcBlock := range blocks {
 				if err := m.solve(rpcBlock); err != nil {
 					m.lastNumber.Store(i - 1)
@@ -808,7 +812,35 @@ func (m *Monitor) syncLastBlock() uint64 {
 	return uint64(maxNumber - minNumber)
 }
 
+// solve block from node
 func (m *Monitor) solve(block *types.Block) error {
+	switch m.srv.Load() {
+	case 0:
+		return m.forStorageService(block)
+	case 1:
+		return m.forExplorerService(block) // others service, explorer, exchange, zkp, nft, etc.
+	case 2:
+		return m.forExchangeService(block)
+	default:
+		return errors.New("no block operation service found")
+	}
+}
+
+func (m *Monitor) SwitchService(srv int) error {
+	m.srv.Store(int32(srv))
+	return nil
+}
+
+// only for examples
+func (m *Monitor) forExplorerService(block *types.Block) error {
+	return errors.New("not support")
+}
+
+func (m *Monitor) forExchangeService(block *types.Block) error {
+	return errors.New("not support")
+}
+
+func (m *Monitor) forStorageService(block *types.Block) error {
 	i := block.Number
 	if i%65536 == 0 {
 		defer func() {
@@ -836,7 +868,6 @@ func (m *Monitor) solve(block *types.Block) error {
 			log.Debug("Seal fs record", "number", i, "record", record, "root", m.fs.Root().Hex(), "blocks", len(m.fs.Blocks()), "txs", m.fs.Txs(), "files", len(m.fs.Files()), "ckp", m.fs.CheckPoint())
 		} else {
 			if m.fs.LastListenBlockNumber() < i {
-				//m.fs.LastListenBlockNumber = i
 				m.fs.Anchor(i)
 			}
 
