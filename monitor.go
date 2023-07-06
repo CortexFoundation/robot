@@ -846,10 +846,10 @@ func (m *Monitor) forExchangeService(block *types.Block) error {
 }
 
 func (m *Monitor) forPrintService(block *types.Block) error {
-	log.Info("Block print", "num", block.Number, "hash", block.Hash.Hex(), "txs", len(block.Txs))
+	log.Info("Block print", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs))
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
-			log.Info("Tx print", "hash", t.Hash.Hex(), "amount", t.Amount.String(), "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+			log.Info("Tx print", "hash", t.Hash, "amount", t.Amount, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
 		}
 	}
 	m.fs.Anchor(block.Number)
