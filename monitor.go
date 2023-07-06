@@ -687,6 +687,10 @@ func (m *Monitor) currentBlock() (uint64, error) {
 }
 
 func (m *Monitor) skip(i uint64) bool {
+	if m.srv.Load() != SRV_MODEL {
+		return false
+	}
+
 	if len(m.ckp.Skips) == 0 || i > m.ckp.Skips[len(m.ckp.Skips)-1].To || i < m.ckp.Skips[0].From {
 		return false
 	}
