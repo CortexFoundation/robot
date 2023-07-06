@@ -140,6 +140,8 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 
 	m.mode = flag.Mode
 
+	m.srv.Store(SRV_MODEL)
+
 	/*torrents, _ := fs.initTorrents()
 	if m.mode != params.LAZY {
 		for k, v := range torrents {
@@ -816,13 +818,13 @@ func (m *Monitor) syncLastBlock() uint64 {
 // solve block from node
 func (m *Monitor) solve(block *types.Block) error {
 	switch m.srv.Load() {
-	case 0:
-		return m.forStorageService(block)
-	case 1:
-		return m.forExplorerService(block) // others service, explorer, exchange, zkp, nft, etc.
-	case 2:
-		return m.forExchangeService(block)
-	case 3:
+	case SRV_MODEL:
+		return m.forModelService(block)
+	//case 1:
+	//	return m.forExplorerService(block) // others service, explorer, exchange, zkp, nft, etc.
+	//case 2:
+	//	return m.forExchangeService(block)
+	case SRV_PRINT:
 		return m.forPrintService(block)
 	default:
 		return errors.New("no block operation service found")
@@ -854,7 +856,7 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 	return nil
 }
 
-func (m *Monitor) forStorageService(block *types.Block) error {
+func (m *Monitor) forModelService(block *types.Block) error {
 	i := block.Number
 	if i%65536 == 0 {
 		defer func() {

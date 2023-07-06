@@ -23,11 +23,11 @@ func main() {
 	if m, err := robot.New(cfg, true, false, false, nil); err != nil {
 		panic(err)
 	} else {
+		m.SwitchService(robot.SRV_PRINT)
 		if err := m.Start(); err != nil {
 			log.Error("start failed", "err", err)
 			panic(err)
 		}
-		m.SwitchService(3)
 		defer m.Stop()
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
