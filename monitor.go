@@ -651,7 +651,7 @@ func (m *Monitor) syncLatestBlock() {
 						elapsed := time.Duration(mclock.Now()) - time.Duration(m.start)
 						log.Info("Finish sync, listener will be paused", "current", m.currentNumber.Load(), "elapsed", common.PrettyDuration(elapsed), "progress", progress, "end", end, "last", m.lastNumber.Load())
 						//return
-						timer.Reset(time.Millisecond * 1000 * 180)
+						timer.Reset(time.Millisecond * 1000 * 60)
 						end = false
 						continue
 					}
@@ -849,7 +849,7 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 	log.Info("Block print", "num", block.Number, "hash", block.Hash.Hex(), "txs", len(block.Txs))
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
-			log.Info("Tx print", "hash", t.Hash.Hex(), "amount", t.Amount, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+			log.Info("Tx print", "hash", t.Hash.Hex(), "amount", t.Amount.String(), "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
 		}
 	}
 	m.fs.Anchor(block.Number)
