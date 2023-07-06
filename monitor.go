@@ -118,6 +118,7 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		//start: mclock.Now(),
 	}
 
+	// TODO https://github.com/ucwong/golang-kv
 	if fs_, err := backend.NewChainDB(flag); err != nil {
 		log.Error("file storage failed", "err", err)
 		return nil, err
@@ -821,6 +822,8 @@ func (m *Monitor) solve(block *types.Block) error {
 		return m.forExplorerService(block) // others service, explorer, exchange, zkp, nft, etc.
 	case 2:
 		return m.forExchangeService(block)
+	case 3:
+		return m.forPrintService(block)
 	default:
 		return errors.New("no block operation service found")
 	}
@@ -838,6 +841,17 @@ func (m *Monitor) forExplorerService(block *types.Block) error {
 
 func (m *Monitor) forExchangeService(block *types.Block) error {
 	return errors.New("not support")
+}
+
+func (m *Monitor) forPrintService(block *types.Block) error {
+	log.Info("Block print", "num", block.Number, "hash", block.Hash.Hex(), "txs", len(block.Txs))
+	if len(block.Txs) > 0 {
+		for _, t := range block.Txs {
+			log.Info("Tx print", "hash", t.Hash.Hex(), "amount", t.Amount, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+		}
+	}
+	m.fs.Anchor(block.Number)
+	return nil
 }
 
 func (m *Monitor) forStorageService(block *types.Block) error {
