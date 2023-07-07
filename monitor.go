@@ -24,12 +24,14 @@ import (
 	"github.com/CortexFoundation/CortexTheseus/common/mclock"
 	"github.com/CortexFoundation/CortexTheseus/log"
 	"github.com/CortexFoundation/CortexTheseus/metrics"
+	params1 "github.com/CortexFoundation/CortexTheseus/params"
 	"github.com/CortexFoundation/CortexTheseus/rpc"
 	"github.com/CortexFoundation/robot/backend"
 	"github.com/CortexFoundation/torrentfs/params"
 	"github.com/CortexFoundation/torrentfs/types"
 	lru "github.com/hashicorp/golang-lru"
 	"math"
+	"math/big"
 	"runtime"
 	"strconv"
 	"sync"
@@ -853,7 +855,8 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 	log.Info("Block print", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs))
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
-			log.Info("Tx print", "hash", t.Hash, "amount", t.Amount, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+			x := new(big.Float).Quo(new(big.Float).SetInt(t.Amount), new(big.Float).SetInt(big.NewInt(params1.Cortex)))
+			log.Info("Tx print", "hash", t.Hash, "amount", x, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
 		}
 	}
 	m.fs.Anchor(block.Number)
