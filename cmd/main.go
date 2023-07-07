@@ -33,8 +33,12 @@ func main() {
 		defer m.Stop()
 
 		go func() {
-			time.Sleep(5 * time.Second)
-			m.SwitchService(robot.SRV_MODEL)
+			for {
+				m.SwitchService(robot.SRV_PRINT)
+				time.Sleep(5 * time.Second)
+				m.SwitchService(robot.SRV_MODEL)
+				time.Sleep(5 * time.Second)
+			}
 		}()
 
 		var c = make(chan os.Signal, 1)

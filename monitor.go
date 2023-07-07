@@ -17,6 +17,7 @@
 package robot
 
 import (
+	"encoding/json"
 	//"context"
 	"errors"
 	"github.com/CortexFoundation/CortexTheseus/common"
@@ -30,6 +31,7 @@ import (
 	"github.com/CortexFoundation/torrentfs/params"
 	"github.com/CortexFoundation/torrentfs/types"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/ucwong/golang-kv"
 	"math"
 	"math/big"
 	"runtime"
@@ -57,14 +59,15 @@ type Monitor struct {
 	config *params.Config
 	cl     *rpc.Client
 	fs     *backend.ChainDB
+	engine kv.Bucket
 	//dl     *backend.TorrentManager
 
 	exitCh        chan any
 	terminated    atomic.Bool
 	lastNumber    atomic.Uint64
 	startNumber   atomic.Uint64
-	scope         uint64
 	currentNumber atomic.Uint64
+	scope         uint64
 	wg            sync.WaitGroup
 	rpcWg         sync.WaitGroup
 
@@ -129,6 +132,8 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 	}
 	m.lastNumber.Store(0)
 	m.currentNumber.Store(0)
+	m.startNumber.Store(0)
+
 	m.terminated.Store(false)
 	m.blockCache, _ = lru.New(delay)
 	m.sizeCache, _ = lru.New(batch)
@@ -143,6 +148,8 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 	m.mode = flag.Mode
 
 	m.srv.Store(SRV_MODEL)
+
+	m.engine = kv.Pebble(flag.DataDir)
 
 	/*torrents, _ := fs.initTorrents()
 	if m.mode != params.LAZY {
@@ -535,6 +542,11 @@ func (m *Monitor) Stop() {
 	//	log.Error("Monitor Fs Manager closed", "error", err)
 	//}
 
+	if m.engine != nil {
+		log.Info("Golang-kv engine close", "engine", m.engine.Name())
+		m.engine.Close()
+	}
+
 	if err := m.fs.Close(); err != nil {
 		log.Error("Monitor File Storage closed", "error", err)
 	}
@@ -840,7 +852,13 @@ func (m *Monitor) solve(block *types.Block) error {
 func (m *Monitor) SwitchService(srv int) error {
 	if m.srv.Load() != int32(srv) {
 		m.srv.Store(int32(srv))
-		log.Info("Service switch", "srv", m.srv.Load())
+
+		if m.lastNumber.Load() > 0 {
+			// TODO record last block according to service category
+			m.fs.Flush()
+			m.lastNumber.Store(m.fs.LastListenBlockNumber())
+		}
+		log.Info("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
 	}
 	return nil
 }
@@ -860,7 +878,19 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 		for _, t := range block.Txs {
 			x := new(big.Float).Quo(new(big.Float).SetInt(t.Amount), new(big.Float).SetInt(big.NewInt(params1.Cortex)))
 			log.Info("Tx print", "hash", t.Hash, "amount", x, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+
+			if v, err := json.Marshal(t); err != nil {
+				return err
+			} else {
+				m.engine.Set(t.Hash.Bytes(), v)
+			}
 		}
+	}
+
+	if v, err := json.Marshal(block); err != nil {
+		return err
+	} else {
+		m.engine.Set(block.Hash.Bytes(), v)
 	}
 	m.fs.Anchor(block.Number)
 	return nil
