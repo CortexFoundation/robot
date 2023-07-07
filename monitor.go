@@ -221,7 +221,6 @@ func (m *Monitor) indexCheck() error {
 	}
 
 	if checkpoint, ok := params.TrustedCheckpoints[genesis.Hash]; ok {
-
 		m.ckp = checkpoint
 
 		version := m.fs.GetRoot(checkpoint.TfsCheckPoint)
@@ -665,7 +664,7 @@ func (m *Monitor) syncLatestBlock() {
 						elapsed := time.Duration(mclock.Now()) - time.Duration(m.start)
 						log.Info("Finish sync, listener will be paused", "current", m.currentNumber.Load(), "elapsed", common.PrettyDuration(elapsed), "progress", progress, "end", end, "last", m.lastNumber.Load())
 						//return
-						timer.Reset(time.Millisecond * 1000 * 60)
+						timer.Reset(time.Millisecond * 1000 * 30)
 						end = false
 						continue
 					}
@@ -853,8 +852,11 @@ func (m *Monitor) SwitchService(srv int) error {
 	if m.srv.Load() != int32(srv) {
 		if m.lastNumber.Load() > 0 {
 			// TODO record last block according to old service category
+			m.fs.Anchor(m.lastNumber.Load())
 			m.fs.Flush()
+
 			// TODO load last block according to new service category
+			m.fs.InitBlockNumber()
 			m.lastNumber.Store(m.fs.LastListenBlockNumber())
 		}
 		m.srv.Store(int32(srv))
@@ -905,6 +907,7 @@ func (m *Monitor) forModelService(block *types.Block) error {
 			m.fs.SkipPrint()
 		}()
 	}
+
 	if hash, suc := m.blockCache.Get(i); !suc || hash != block.Hash.Hex() {
 		if record, parseErr := m.parseBlockTorrentInfo(block); parseErr != nil {
 			log.Error("Parse new block", "number", block.Number, "block", block, "error", parseErr)
@@ -931,5 +934,6 @@ func (m *Monitor) forModelService(block *types.Block) error {
 		}
 		m.blockCache.Add(i, block.Hash.Hex())
 	}
+
 	return nil
 }
