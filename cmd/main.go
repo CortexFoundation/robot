@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/CortexFoundation/CortexTheseus/log"
 	"github.com/CortexFoundation/robot"
@@ -24,11 +25,18 @@ func main() {
 		panic(err)
 	} else {
 		m.SwitchService(robot.SRV_PRINT)
+
 		if err := m.Start(); err != nil {
 			log.Error("start failed", "err", err)
 			panic(err)
 		}
 		defer m.Stop()
+
+		go func() {
+			time.Sleep(5 * time.Second)
+			m.SwitchService(robot.SRV_MODEL)
+		}()
+
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		<-c
