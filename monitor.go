@@ -34,6 +34,7 @@ import (
 	"github.com/ucwong/golang-kv"
 	"math"
 	"math/big"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"sync"
@@ -149,7 +150,7 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 
 	m.srv.Store(SRV_MODEL)
 
-	m.engine = kv.Pebble(flag.DataDir)
+	m.engine = kv.Pebble(filepath.Join(flag.DataDir, ".srv"))
 
 	/*torrents, _ := fs.initTorrents()
 	if m.mode != params.LAZY {
