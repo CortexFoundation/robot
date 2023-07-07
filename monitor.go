@@ -838,7 +838,10 @@ func (m *Monitor) solve(block *types.Block) error {
 }
 
 func (m *Monitor) SwitchService(srv int) error {
-	m.srv.Store(int32(srv))
+	if m.srv.Load() != int32(srv) {
+		m.srv.Store(int32(srv))
+		log.Info("Service switch", "srv", m.srv.Load())
+	}
 	return nil
 }
 
