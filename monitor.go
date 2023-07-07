@@ -851,13 +851,13 @@ func (m *Monitor) solve(block *types.Block) error {
 
 func (m *Monitor) SwitchService(srv int) error {
 	if m.srv.Load() != int32(srv) {
-		m.srv.Store(int32(srv))
-
 		if m.lastNumber.Load() > 0 {
-			// TODO record last block according to service category
+			// TODO record last block according to old service category
 			m.fs.Flush()
+			// TODO load last block according to new service category
 			m.lastNumber.Store(m.fs.LastListenBlockNumber())
 		}
+		m.srv.Store(int32(srv))
 		log.Info("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
 	}
 	return nil
