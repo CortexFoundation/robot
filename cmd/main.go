@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	//"time"
+	"time"
 
 	"github.com/CortexFoundation/CortexTheseus/log"
 	"github.com/CortexFoundation/robot"
@@ -30,15 +30,15 @@ func main() {
 		}
 		defer m.Stop()
 
-		m.SwitchService(robot.SRV_RECORD)
-		/*go func() {
+		//m.SwitchService(robot.SRV_RECORD)
+		go func() {
 			for {
 				m.SwitchService(robot.SRV_RECORD)
-				time.Sleep(5 * time.Second)
+				time.Sleep(10 * time.Second)
 				m.SwitchService(robot.SRV_MODEL)
-				time.Sleep(5 * time.Second)
+				time.Sleep(10 * time.Second)
 			}
-		}()*/
+		}()
 
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)

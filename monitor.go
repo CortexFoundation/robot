@@ -804,7 +804,6 @@ func (m *Monitor) syncLastBlock() uint64 {
 				}*/
 			}
 		} else {
-
 			rpcBlock, rpcErr := m.rpcBlockByNumber(i)
 			if rpcErr != nil {
 				log.Error("Sync old block failed", "number", i, "error", rpcErr)
@@ -831,7 +830,8 @@ func (m *Monitor) syncLastBlock() uint64 {
 			}*/
 		}
 	}
-	m.lastNumber.Store(maxNumber)
+	//m.lastNumber.Store(maxNumber)
+	m.storeLastNumber(maxNumber)
 	//if maxNumber-minNumber > batch-1 {
 	if maxNumber-minNumber > delay {
 		elapsedA := time.Duration(mclock.Now()) - time.Duration(m.start)
@@ -865,9 +865,11 @@ func (m *Monitor) SwitchService(srv int) error {
 			if m.lastNumber.Load() > 0 {
 				m.fs.Anchor(m.lastNumber.Load())
 				m.fs.Flush()
+				log.Info("Model srv flush", "last", m.lastNumber.Load())
 			}
 		case SRV_RECORD:
 			if m.lastNumber.Load() > 0 {
+				log.Info("Record srv flush", "last", m.lastNumber.Load())
 				m.engine.Set([]byte("srv_record_last"), []byte(strconv.FormatUint(m.lastNumber.Load(), 16)))
 			}
 		}
@@ -877,21 +879,27 @@ func (m *Monitor) SwitchService(srv int) error {
 		case SRV_MODEL:
 			m.fs.InitBlockNumber()
 			m.lastNumber.Store(m.fs.LastListenBlockNumber())
+			log.Info("Model srv load", "last", m.lastNumber.Load())
 		case SRV_RECORD:
 			if v := m.engine.Get([]byte("srv_record_last")); v != nil {
-
 				number, err := strconv.ParseUint(string(v), 16, 64)
 				if err != nil {
 					return err
 				}
 				m.lastNumber.Store(number)
 			}
+			log.Info("Record srv load", "last", m.lastNumber.Load())
 		}
 		//}
 		m.srv.Store(int32(srv))
-		log.Info("Service switch", "srv", m.srv.Load(), "srv_record_last", m.lastNumber.Load())
+		log.Debug("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
 	}
 	return nil
+}
+
+func (m *Monitor) storeLastNumber(last uint64) {
+	log.Info("Last number changed", "last", last)
+	m.lastNumber.Store(last)
 }
 
 // only for examples
@@ -904,11 +912,11 @@ func (m *Monitor) forExchangeService(block *types.Block) error {
 }
 
 func (m *Monitor) forPrintService(block *types.Block) error {
-	log.Info("Block record", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
+	log.Debug("Block record", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
 			x := new(big.Float).Quo(new(big.Float).SetInt(t.Amount), new(big.Float).SetInt(big.NewInt(params1.Cortex)))
-			log.Info("Tx record", "hash", t.Hash, "amount", x, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+			log.Debug("Tx record", "hash", t.Hash, "amount", x, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
 
 			if v, err := json.Marshal(t); err != nil {
 				return err
@@ -924,8 +932,8 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 		m.engine.Set(block.Hash.Bytes(), v)
 	}
 
-	m.lastNumber.Store(block.Number)
 	m.engine.Set([]byte("srv_record_last"), []byte(strconv.FormatUint(block.Number, 16)))
+	//m.lastNumber.Store(block.Number)
 	return nil
 }
 
