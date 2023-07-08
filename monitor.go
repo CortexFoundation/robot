@@ -646,18 +646,20 @@ func (m *Monitor) syncLatestBlock() {
 			progress = m.syncLastBlock()
 			// Avoid sync in full mode, fresh interval may be less.
 			if progress >= delay {
-				//timer.Reset(0)
+				end = false
+				timer.Reset(time.Millisecond * 1000)
+			} else if progress > 1 {
 				end = false
 				timer.Reset(time.Millisecond * 2000)
-			} else if progress >= 1 {
-				end = false
-				timer.Reset(time.Millisecond * 3000)
+			} else if progress == 1 {
+				end = true
+				timer.Reset(time.Millisecond * 13500)
 			} else {
 				if !m.listen {
 					if (m.ckp != nil && m.currentNumber.Load() >= m.ckp.TfsCheckPoint) || (m.ckp == nil && m.currentNumber.Load() > 0) {
 						if !end {
 							end = true
-							timer.Reset(time.Millisecond * 15000)
+							timer.Reset(time.Millisecond * 6750)
 							continue
 						}
 						m.fs.Flush()
@@ -665,12 +667,12 @@ func (m *Monitor) syncLatestBlock() {
 						elapsed := time.Duration(mclock.Now()) - time.Duration(m.start)
 						log.Debug("Finish sync, listener will be paused", "current", m.currentNumber.Load(), "elapsed", common.PrettyDuration(elapsed), "progress", progress, "end", end, "last", m.lastNumber.Load())
 						//return
-						timer.Reset(time.Millisecond * 1000 * 15)
+						timer.Reset(time.Millisecond * 6750)
 						end = false
 						continue
 					}
 				}
-				timer.Reset(time.Millisecond * 6000)
+				timer.Reset(time.Millisecond * 6750)
 			}
 			counter++
 			if counter%10 == 0 {
