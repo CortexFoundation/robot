@@ -849,7 +849,7 @@ func (m *Monitor) solve(block *types.Block) error {
 	//	return m.forExplorerService(block) // others service, explorer, exchange, zkp, nft, etc.
 	//case 2:
 	//	return m.forExchangeService(block)
-	case SRV_PRINT:
+	case SRV_RECORD:
 		return m.forPrintService(block)
 	default:
 		return errors.New("no block operation service found")
@@ -866,9 +866,9 @@ func (m *Monitor) SwitchService(srv int) error {
 				m.fs.Anchor(m.lastNumber.Load())
 				m.fs.Flush()
 			}
-		case SRV_PRINT:
+		case SRV_RECORD:
 			if m.lastNumber.Load() > 0 {
-				m.engine.Set([]byte("srv_print_last"), []byte(strconv.FormatUint(m.lastNumber.Load(), 16)))
+				m.engine.Set([]byte("srv_record_last"), []byte(strconv.FormatUint(m.lastNumber.Load(), 16)))
 			}
 		}
 
@@ -877,8 +877,8 @@ func (m *Monitor) SwitchService(srv int) error {
 		case SRV_MODEL:
 			m.fs.InitBlockNumber()
 			m.lastNumber.Store(m.fs.LastListenBlockNumber())
-		case SRV_PRINT:
-			if v := m.engine.Get([]byte("srv_print_last")); v != nil {
+		case SRV_RECORD:
+			if v := m.engine.Get([]byte("srv_record_last")); v != nil {
 
 				number, err := strconv.ParseUint(string(v), 16, 64)
 				if err != nil {
@@ -889,7 +889,7 @@ func (m *Monitor) SwitchService(srv int) error {
 		}
 		//}
 		m.srv.Store(int32(srv))
-		log.Info("Service switch", "srv", m.srv.Load(), "srv_print_last", m.lastNumber.Load())
+		log.Info("Service switch", "srv", m.srv.Load(), "srv_record_last", m.lastNumber.Load())
 	}
 	return nil
 }
@@ -904,11 +904,11 @@ func (m *Monitor) forExchangeService(block *types.Block) error {
 }
 
 func (m *Monitor) forPrintService(block *types.Block) error {
-	log.Info("Block print", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
+	log.Info("Block record", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
 			x := new(big.Float).Quo(new(big.Float).SetInt(t.Amount), new(big.Float).SetInt(big.NewInt(params1.Cortex)))
-			log.Info("Tx print", "hash", t.Hash, "amount", x, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
+			log.Info("Tx record", "hash", t.Hash, "amount", x, "gas", t.GasLimit, "receipt", t.Recipient, "payload", t.Payload)
 
 			if v, err := json.Marshal(t); err != nil {
 				return err
@@ -925,7 +925,7 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 	}
 
 	m.lastNumber.Store(block.Number)
-	m.engine.Set([]byte("srv_print_last"), []byte(strconv.FormatUint(block.Number, 16)))
+	m.engine.Set([]byte("srv_record_last"), []byte(strconv.FormatUint(block.Number, 16)))
 	return nil
 }
 
