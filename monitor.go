@@ -855,12 +855,22 @@ func (m *Monitor) SwitchService(srv int) error {
 	if m.srv.Load() != int32(srv) {
 		if m.lastNumber.Load() > 0 {
 			// TODO record last block according to old service category
-			m.fs.Anchor(m.lastNumber.Load())
-			m.fs.Flush()
+			switch m.srv.Load() {
+			case SRV_MODEL:
+				m.fs.Anchor(m.lastNumber.Load())
+				m.fs.Flush()
+			case SRV_PRINT:
+				// TODO
+			}
 
 			// TODO load last block according to new service category
-			m.fs.InitBlockNumber()
-			m.lastNumber.Store(m.fs.LastListenBlockNumber())
+			switch srv {
+			case SRV_MODEL:
+				m.fs.InitBlockNumber()
+				m.lastNumber.Store(m.fs.LastListenBlockNumber())
+			case SRV_PRINT:
+				// TODO
+			}
 		}
 		m.srv.Store(int32(srv))
 		log.Info("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
