@@ -43,8 +43,8 @@ import (
 )
 
 const (
-	batch = params.SyncBatch
-	delay = params.Delay
+	batch = 4096 //params.SyncBatch
+	delay = 6    //params.Delay
 )
 
 var (
@@ -670,7 +670,7 @@ func (m *Monitor) syncLatestBlock() {
 			// Avoid sync in full mode, fresh interval may be less.
 			if progress >= delay {
 				end = false
-				timer.Reset(time.Millisecond * 1000)
+				timer.Reset(time.Millisecond * 0)
 			} else if progress > 1 {
 				end = false
 				timer.Reset(time.Millisecond * 2000)
@@ -698,7 +698,7 @@ func (m *Monitor) syncLatestBlock() {
 				timer.Reset(time.Millisecond * 6750)
 			}
 			counter++
-			if counter%10 == 0 {
+			if counter%100 == 0 {
 				log.Info("Monitor status", "blocks", progress, "current", m.CurrentNumber(), "latest", m.lastNumber.Load(), "end", end, "txs", m.fs.Txs(), "ckp", m.fs.CheckPoint(), "last", m.fs.LastListenBlockNumber())
 				counter = 0
 			}
@@ -791,7 +791,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 			break
 		}
 		if maxNumber > minNumber && (i-minNumber)%128 == 0 {
-			log.Info("Running", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch, "i", i, "srv", m.srv.Load(), "size", maxNumber-minNumber, "progress", float64(i-minNumber)/float64(maxNumber-minNumber))
+			log.Debug("Running", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch, "i", i, "srv", m.srv.Load(), "size", maxNumber-minNumber, "progress", float64(i-minNumber)/float64(maxNumber-minNumber))
 		}
 		if m.ckp != nil && m.skip(i) {
 			//m.lastNumber = i - 1
@@ -855,7 +855,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 			}*/
 		}
 	}
-	log.Info("Last number changed", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch)
+	log.Debug("Last number changed", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch)
 	m.lastNumber.Store(maxNumber)
 	//m.storeLastNumber(maxNumber)
 	//if maxNumber-minNumber > batch-1 {
