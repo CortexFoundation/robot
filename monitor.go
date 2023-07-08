@@ -790,7 +790,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 			maxNumber = i - 1
 			break
 		}
-		if maxNumber > minNumber && i%99 == 0 {
+		if maxNumber > minNumber && (i-minNumber)%128 == 0 {
 			log.Info("Running", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch, "i", i, "srv", m.srv.Load(), "size", maxNumber-minNumber, "progress", float64(i-minNumber)/float64(maxNumber-minNumber))
 		}
 		if m.ckp != nil && m.skip(i) {
