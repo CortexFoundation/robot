@@ -542,6 +542,7 @@ func (m *Monitor) Stop() {
 	//	log.Error("Monitor Fs Manager closed", "error", err)
 	//}
 
+	// TODO dirty statics deal with
 	if m.engine != nil {
 		log.Info("Golang-kv engine close", "engine", m.engine.Name())
 		m.engine.Close()
@@ -593,13 +594,15 @@ func (m *Monitor) run() error {
 	}
 	m.cl = rpcClient
 
-	m.lastNumber.Store(m.fs.LastListenBlockNumber())
+	if m.srv.Load() == SRV_MODEL {
+		m.lastNumber.Store(m.fs.LastListenBlockNumber())
+		if err := m.indexCheck(); err != nil {
+			return err
+		}
+	}
+
 	m.currentBlock()
 	m.startNumber.Store(uint64(math.Min(float64(m.fs.LastListenBlockNumber()), float64(m.currentNumber.Load())))) // ? m.currentNumber:m.fs.LastListenBlockNumber
-
-	if err := m.indexCheck(); err != nil {
-		return err
-	}
 
 	//if err := m.loadHistory(); err != nil {
 	//	return err
@@ -782,6 +785,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 			// batch blocks operation according service category
 			for _, rpcBlock := range blocks {
 				if err := m.solve(rpcBlock); err != nil {
+					log.Error("solve err", "err", err)
 					m.lastNumber.Store(i - 1)
 					return 0
 				}
@@ -808,6 +812,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 				return 0
 			}
 			if err := m.solve(rpcBlock); err != nil {
+				log.Error("solve err", "err", err)
 				m.lastNumber.Store(i - 1)
 				return 0
 			}
@@ -853,27 +858,38 @@ func (m *Monitor) solve(block *types.Block) error {
 
 func (m *Monitor) SwitchService(srv int) error {
 	if m.srv.Load() != int32(srv) {
-		if m.lastNumber.Load() > 0 {
-			// TODO record last block according to old service category
-			switch m.srv.Load() {
-			case SRV_MODEL:
+		//if m.lastNumber.Load() > 0 {
+		// TODO record last block according to old service category
+		switch m.srv.Load() {
+		case SRV_MODEL:
+			if m.lastNumber.Load() > 0 {
 				m.fs.Anchor(m.lastNumber.Load())
 				m.fs.Flush()
-			case SRV_PRINT:
-				// TODO
 			}
-
-			// TODO load last block according to new service category
-			switch srv {
-			case SRV_MODEL:
-				m.fs.InitBlockNumber()
-				m.lastNumber.Store(m.fs.LastListenBlockNumber())
-			case SRV_PRINT:
-				// TODO
+		case SRV_PRINT:
+			if m.lastNumber.Load() > 0 {
+				m.engine.Set([]byte("srv_print_last"), []byte(strconv.FormatUint(m.lastNumber.Load(), 16)))
 			}
 		}
+
+		// TODO load last block according to new service category
+		switch srv {
+		case SRV_MODEL:
+			m.fs.InitBlockNumber()
+			m.lastNumber.Store(m.fs.LastListenBlockNumber())
+		case SRV_PRINT:
+			if v := m.engine.Get([]byte("srv_print_last")); v != nil {
+
+				number, err := strconv.ParseUint(string(v), 16, 64)
+				if err != nil {
+					return err
+				}
+				m.lastNumber.Store(number)
+			}
+		}
+		//}
 		m.srv.Store(int32(srv))
-		log.Info("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
+		log.Info("Service switch", "srv", m.srv.Load(), "srv_print_last", m.lastNumber.Load())
 	}
 	return nil
 }
@@ -888,7 +904,7 @@ func (m *Monitor) forExchangeService(block *types.Block) error {
 }
 
 func (m *Monitor) forPrintService(block *types.Block) error {
-	log.Info("Block print", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs))
+	log.Info("Block print", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
 			x := new(big.Float).Quo(new(big.Float).SetInt(t.Amount), new(big.Float).SetInt(big.NewInt(params1.Cortex)))
@@ -907,7 +923,9 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 	} else {
 		m.engine.Set(block.Hash.Bytes(), v)
 	}
-	m.fs.Anchor(block.Number)
+
+	m.lastNumber.Store(block.Number)
+	m.engine.Set([]byte("srv_print_last"), []byte(strconv.FormatUint(block.Number, 16)))
 	return nil
 }
 
