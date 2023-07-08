@@ -63,7 +63,9 @@ type Monitor struct {
 	engine kv.Bucket
 	//dl     *backend.TorrentManager
 
-	exitCh        chan any
+	exitCh chan any
+	srvCh  chan int
+	//exitSyncCh    chan any
 	terminated    atomic.Bool
 	lastNumber    atomic.Uint64
 	startNumber   atomic.Uint64
@@ -119,7 +121,9 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		//fs:     fs,
 		//dl:            tMana,
 		exitCh: make(chan any),
-		scope:  uint64(math.Min(float64(runtime.NumCPU()), float64(8))),
+		srvCh:  make(chan int),
+		//exitSyncCh: make(chan any),
+		scope: uint64(math.Min(float64(runtime.NumCPU()), float64(8))),
 		//taskCh:        make(chan *types.Block, batch),
 		//start: mclock.Now(),
 	}
@@ -513,6 +517,13 @@ func (m *Monitor) parseBlockTorrentInfo(b *types.Block) (bool, error) {
 
 func (m *Monitor) exit() {
 	m.closeOnce.Do(func() {
+		/*if m.exitSyncCh != nil {
+			close(m.exitSyncCh)
+			m.exitSyncCh = nil
+		} else {
+			log.Warn("Listener sync has already been stopped")
+		}*/
+
 		if m.exitCh != nil {
 			close(m.exitCh)
 			m.wg.Wait()
@@ -562,16 +573,21 @@ func (m *Monitor) Start() error {
 	//return nil
 	//}
 
+	s := make(chan bool)
 	m.startOnce.Do(func() {
 		m.wg.Add(1)
 		go func() {
 			defer m.wg.Done()
+			defer func() {
+				s <- true
+			}()
 			m.fs.Init()
 			if err := m.run(); err != nil {
 				log.Error("Fs monitor start failed", "err", err)
 			}
 		}()
 	})
+	<-s
 	return nil
 }
 
@@ -644,6 +660,10 @@ func (m *Monitor) syncLatestBlock() {
 	progress, counter, end := uint64(0), 0, false
 	for {
 		select {
+		case sv := <-m.srvCh:
+			//log.Info("Do switch start", "srv", sv)
+			m.DoSwitch(sv)
+			//log.Info("Do switch finish", "srv", sv)
 		case <-timer.C:
 			//m.currentBlock()
 			progress = m.syncLastBlock()
@@ -740,6 +760,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 	}
 
 	minNumber := m.lastNumber.Load() + 1
+	//log.Info("min", "minNumber", minNumber)
 	maxNumber := uint64(0)
 	if currentNumber > delay {
 		maxNumber = currentNumber - delay
@@ -751,23 +772,27 @@ func (m *Monitor) syncLastBlock() uint64 {
 		}
 	}
 
-	if maxNumber > batch*8+minNumber {
-		maxNumber = minNumber + batch*8
+	if maxNumber > batch+minNumber {
+		maxNumber = minNumber + batch
 	}
+
 	if maxNumber < minNumber {
 		return 0
 	}
+
 	if m.start == 0 {
 		m.start = mclock.Now()
 	}
-	//start := mclock.Now()
+
 	for i := minNumber; i <= maxNumber; { // i++ {
 		if m.terminated.Load() {
 			log.Warn("Fs scan terminated", "number", i)
 			maxNumber = i - 1
 			break
 		}
-
+		if maxNumber > minNumber && i%99 == 0 {
+			log.Info("Running", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch, "i", i, "srv", m.srv.Load(), "size", maxNumber-minNumber, "progress", float64(i-minNumber)/float64(maxNumber-minNumber))
+		}
 		if m.ckp != nil && m.skip(i) {
 			//m.lastNumber = i - 1
 			i++
@@ -830,8 +855,9 @@ func (m *Monitor) syncLastBlock() uint64 {
 			}*/
 		}
 	}
-	//m.lastNumber.Store(maxNumber)
-	m.storeLastNumber(maxNumber)
+	log.Info("Last number changed", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch)
+	m.lastNumber.Store(maxNumber)
+	//m.storeLastNumber(maxNumber)
 	//if maxNumber-minNumber > batch-1 {
 	if maxNumber-minNumber > delay {
 		elapsedA := time.Duration(mclock.Now()) - time.Duration(m.start)
@@ -857,18 +883,32 @@ func (m *Monitor) solve(block *types.Block) error {
 }
 
 func (m *Monitor) SwitchService(srv int) error {
+	//log.Info("Srv start", "srv", srv, "ch", cap(m.srvCh))
+	//if cap(m.srvCh) == 0 {
+	m.srvCh <- srv
+	//} else {
+	//	return errors.New("can't switch service right now")
+	//}
+	//log.Info("Srv end", "srv", srv, "ch", cap(m.srvCh))
+	return nil
+}
+func (m *Monitor) DoSwitch(srv int) error {
 	if m.srv.Load() != int32(srv) {
 		//if m.lastNumber.Load() > 0 {
 		// TODO record last block according to old service category
 		switch m.srv.Load() {
 		case SRV_MODEL:
 			if m.lastNumber.Load() > 0 {
+				//close(m.exitSyncCh)
+
 				m.fs.Anchor(m.lastNumber.Load())
 				m.fs.Flush()
 				log.Info("Model srv flush", "last", m.lastNumber.Load())
 			}
 		case SRV_RECORD:
 			if m.lastNumber.Load() > 0 {
+				//close(m.exitSyncCh)
+
 				log.Info("Record srv flush", "last", m.lastNumber.Load())
 				m.engine.Set([]byte("srv_record_last"), []byte(strconv.FormatUint(m.lastNumber.Load(), 16)))
 			}
@@ -880,19 +920,29 @@ func (m *Monitor) SwitchService(srv int) error {
 			m.fs.InitBlockNumber()
 			m.lastNumber.Store(m.fs.LastListenBlockNumber())
 			log.Info("Model srv load", "last", m.lastNumber.Load())
+
+			//m.exitSyncCh = make(chan any)
+			//m.wg.Add(1)
+			//go m.syncLatestBlock()
 		case SRV_RECORD:
 			if v := m.engine.Get([]byte("srv_record_last")); v != nil {
-				number, err := strconv.ParseUint(string(v), 16, 64)
-				if err != nil {
-					return err
+				if number, err := strconv.ParseUint(string(v), 16, 64); err == nil {
+					m.lastNumber.Store(number)
+				} else {
+					m.lastNumber.Store(0)
 				}
-				m.lastNumber.Store(number)
+			} else {
+				m.lastNumber.Store(0)
 			}
 			log.Info("Record srv load", "last", m.lastNumber.Load())
+
+			//m.exitSyncCh = make(chan any)
+			//m.wg.Add(1)
+			//go m.syncLatestBlock()
 		}
 		//}
 		m.srv.Store(int32(srv))
-		log.Debug("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
+		log.Info("Service switch", "srv", m.srv.Load(), "last", m.lastNumber.Load())
 	}
 	return nil
 }
@@ -933,7 +983,6 @@ func (m *Monitor) forPrintService(block *types.Block) error {
 	}
 
 	m.engine.Set([]byte("srv_record_last"), []byte(strconv.FormatUint(block.Number, 16)))
-	//m.lastNumber.Store(block.Number)
 	return nil
 }
 
