@@ -573,21 +573,16 @@ func (m *Monitor) Start() error {
 	//return nil
 	//}
 
-	s := make(chan bool)
 	m.startOnce.Do(func() {
 		m.wg.Add(1)
 		go func() {
 			defer m.wg.Done()
-			defer func() {
-				s <- true
-			}()
 			m.fs.Init()
 			if err := m.run(); err != nil {
 				log.Error("Fs monitor start failed", "err", err)
 			}
 		}()
 	})
-	<-s
 	return nil
 }
 
