@@ -657,7 +657,7 @@ func (m *Monitor) syncLatestBlock() {
 		select {
 		case sv := <-m.srvCh:
 			//log.Info("Do switch start", "srv", sv)
-			m.DoSwitch(sv)
+			m.doSwitch(sv)
 			//log.Info("Do switch finish", "srv", sv)
 		case <-timer.C:
 			//m.currentBlock()
@@ -891,7 +891,7 @@ func (m *Monitor) SwitchService(srv int) error {
 	//log.Info("Srv end", "srv", srv, "ch", cap(m.srvCh))
 	return nil
 }
-func (m *Monitor) DoSwitch(srv int) error {
+func (m *Monitor) doSwitch(srv int) error {
 	if m.srv.Load() != int32(srv) {
 		//if m.lastNumber.Load() > 0 {
 		// TODO record last block according to old service category
