@@ -880,7 +880,11 @@ func (m *Monitor) solve(block *types.Block) error {
 func (m *Monitor) SwitchService(srv int) error {
 	//log.Info("Srv start", "srv", srv, "ch", cap(m.srvCh))
 	//if cap(m.srvCh) == 0 {
-	m.srvCh <- srv
+	select {
+	case m.srvCh <- srv:
+	case <-m.exitCh:
+		return nil
+	}
 	//} else {
 	//	return errors.New("can't switch service right now")
 	//}
