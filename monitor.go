@@ -871,7 +871,7 @@ func (m *Monitor) solve(block *types.Block) error {
 	//case 2:
 	//	return m.forExchangeService(block)
 	case SRV_RECORD:
-		return m.forPrintService(block)
+		return m.forRecordService(block)
 	default:
 		return errors.New("no block operation service found")
 	}
@@ -956,7 +956,7 @@ func (m *Monitor) forExchangeService(block *types.Block) error {
 	return errors.New("not support")
 }
 
-func (m *Monitor) forPrintService(block *types.Block) error {
+func (m *Monitor) forRecordService(block *types.Block) error {
 	log.Debug("Block record", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
