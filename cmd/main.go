@@ -24,17 +24,21 @@ func main() {
 	if m, err := robot.New(cfg, true, false, false, nil); err != nil {
 		panic(err)
 	} else {
-		m.SwitchService(robot.SRV_PRINT)
-
 		if err := m.Start(); err != nil {
 			log.Error("start failed", "err", err)
 			panic(err)
 		}
 		defer m.Stop()
 
+		//m.SwitchService(robot.SRV_RECORD)
 		go func() {
-			time.Sleep(5 * time.Second)
-			m.SwitchService(robot.SRV_MODEL)
+			for {
+				m.SwitchService(robot.SRV_RECORD)
+				time.Sleep(30 * time.Second)
+				m.SwitchService(robot.SRV_MODEL)
+				time.Sleep(30 * time.Second)
+				//m.SwitchService(robot.SRV_RECORD)
+			}
 		}()
 
 		var c = make(chan os.Signal, 1)
