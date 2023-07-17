@@ -3,12 +3,12 @@ module github.com/CortexFoundation/robot
 go 1.19
 
 require (
-	github.com/CortexFoundation/CortexTheseus v1.10.45
+	github.com/CortexFoundation/CortexTheseus v1.10.46
 	github.com/CortexFoundation/merkletree v0.0.0-20230401054716-73abfa6f740b
-	github.com/CortexFoundation/torrentfs v1.0.51
+	github.com/CortexFoundation/torrentfs v1.0.52-0.20230711131012-594cb55f6538
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
-	github.com/ucwong/golang-kv v1.0.22-0.20230702214711-bd3089dc589a
+	github.com/ucwong/golang-kv v1.0.22-0.20230711090627-455356f3db9c
 	go.etcd.io/bbolt v1.3.7
 )
 
@@ -19,7 +19,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.10.0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
-	github.com/cockroachdb/pebble v0.0.0-20230710174534-a9a079d4fb6b // indirect
+	github.com/cockroachdb/pebble v0.0.0-20230716025533-809057a10ee4 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230613231145-182959a1fad6 // indirect
 	github.com/deckarep/golang-set/v2 v2.3.0 // indirect
@@ -38,7 +38,7 @@ require (
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.4 // indirect
-	github.com/holiman/uint256 v1.2.3-0.20230331162826-e42b95a00943 // indirect
+	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -63,7 +63,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
