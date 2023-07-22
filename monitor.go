@@ -260,10 +260,13 @@ func (m *Monitor) indexInit() error {
 			fileMap[file.Meta.InfoHash] = file
 		}
 	}
-	capcity := uint64(0)
-	seed := 0
-	pause := 0
-	pending := 0
+
+	var (
+		capcity = uint64(0)
+		seed    = 0
+		pause   = 0
+		pending = 0
+	)
 
 	for _, file := range fileMap {
 		var bytesRequested uint64
