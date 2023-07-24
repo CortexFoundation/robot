@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/CortexFoundation/CortexTheseus v1.10.46
-	github.com/CortexFoundation/merkletree v0.0.0-20230401054716-73abfa6f740b
+	github.com/CortexFoundation/merkletree v0.0.0-20230724124840-b6e80265a137
 	github.com/CortexFoundation/torrentfs v1.0.52-0.20230711131012-594cb55f6538
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
