@@ -537,12 +537,12 @@ func (m *Monitor) exit() {
 	})
 }
 
-func (m *Monitor) Stop() {
+func (m *Monitor) Stop() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	//m.closeOnce.Do(func() {
 	if m.terminated.Swap(true) {
-		return
+		return nil
 	}
 
 	m.exit()
@@ -558,13 +558,15 @@ func (m *Monitor) Stop() {
 	// TODO dirty statics deal with
 	if m.engine != nil {
 		log.Info("Golang-kv engine close", "engine", m.engine.Name())
-		m.engine.Close()
+		return m.engine.Close()
 	}
 
 	if err := m.fs.Close(); err != nil {
 		log.Error("Monitor File Storage closed", "error", err)
+		return err
 	}
 	log.Info("Fs listener synchronizing closed")
+	return nil
 	//})
 }
 
