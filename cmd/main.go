@@ -35,11 +35,10 @@ func main() {
 		//m.SwitchService(robot.SRV_RECORD)
 		go func() {
 			for {
-				mm.SwitchService(robot.SRV_RECORD)
+				//mm.SwitchService(robot.SRV_RECORD)
+				//time.Sleep(30 * time.Second)
+				//mm.SwitchService(robot.SRV_MODEL)
 				time.Sleep(30 * time.Second)
-				mm.SwitchService(robot.SRV_MODEL)
-				time.Sleep(30 * time.Second)
-				//m.SwitchService(robot.SRV_RECORD)
 			}
 		}()
 

@@ -74,7 +74,7 @@ type Monitor struct {
 	wg            sync.WaitGroup
 	rpcWg         sync.WaitGroup
 
-	//taskCh      chan *types.Block
+	taskCh chan *types.Block
 	//newTaskHook func(*types.Block)
 	blockCache *lru.Cache
 	sizeCache  *lru.Cache
@@ -123,8 +123,9 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		exitCh: make(chan any),
 		srvCh:  make(chan int),
 		//exitSyncCh: make(chan any),
-		scope: uint64(math.Min(float64(runtime.NumCPU()), float64(8))),
-		//taskCh:        make(chan *types.Block, batch),
+		scope:  uint64(math.Min(float64(runtime.NumCPU()), float64(8))),
+		taskCh: make(chan *types.Block, batch),
+		//taskCh:        make(chan *types.Block, 1),
 		//start: mclock.Now(),
 	}
 
@@ -172,10 +173,6 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 
 	return m, nil
 }
-
-//func (m *Monitor) DB() *backend.ChainDB {
-//	return m.fs
-//}
 
 func (m *Monitor) CurrentNumber() uint64 {
 	return m.currentNumber.Load()
@@ -288,27 +285,30 @@ func (m *Monitor) indexInit() error {
 	return nil
 }
 
-/*func (m *Monitor) taskLoop() {
+func (m *Monitor) taskQueue(task *types.Block) {
+	m.taskCh <- task
+}
+
+func (m *Monitor) taskLoop() {
+	log.Info("Task channel started")
 	defer m.wg.Done()
 	for {
 		select {
 		case task := <-m.taskCh:
-			if m.newTaskHook != nil {
-				m.newTaskHook(task)
-			}
+			//if m.newTaskHook != nil {
+			//	m.newTaskHook(task)
+			//}
 
 			if err := m.solve(task); err != nil {
+				m.lastNumber.Store(task.Number - 1)
 				log.Warn("Block solved failed, try again", "err", err, "num", task.Number)
 			}
 		case <-m.exitCh:
-			if cap(m.taskCh) > 0 {
-				continue
-			}
 			log.Info("Monitor task channel closed")
 			return
 		}
 	}
-}*/
+}
 
 // SetConnection method builds connection to remote or local communicator.
 func (m *Monitor) buildConnection(ipcpath string, rpcuri string) (*rpc.Client, error) {
@@ -520,13 +520,6 @@ func (m *Monitor) parseBlockTorrentInfo(b *types.Block) (bool, error) {
 
 func (m *Monitor) exit() {
 	m.closeOnce.Do(func() {
-		/*if m.exitSyncCh != nil {
-			close(m.exitSyncCh)
-			m.exitSyncCh = nil
-		} else {
-			log.Warn("Listener sync has already been stopped")
-		}*/
-
 		if m.exitCh != nil {
 			close(m.exitCh)
 			m.wg.Wait()
@@ -540,7 +533,6 @@ func (m *Monitor) exit() {
 func (m *Monitor) Stop() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	//m.closeOnce.Do(func() {
 	if m.terminated.Swap(true) {
 		return nil
 	}
@@ -567,7 +559,6 @@ func (m *Monitor) Stop() error {
 	}
 	log.Info("Fs listener synchronizing closed")
 	return nil
-	//})
 }
 
 // Start ... start ListenOn on the rpc port of a blockchain full node
@@ -622,8 +613,8 @@ func (m *Monitor) run() error {
 	//if err := m.loadHistory(); err != nil {
 	//	return err
 	//}
-	//m.wg.Add(1)
-	//go m.taskLoop()
+	m.wg.Add(1)
+	go m.taskLoop()
 	//m.wg.Add(1)
 	//go m.listenLatestBlock()
 	m.wg.Add(1)
@@ -685,7 +676,6 @@ func (m *Monitor) syncLatestBlock() {
 							continue
 						}
 						m.fs.Flush()
-						//go m.exit()
 						elapsed := time.Duration(mclock.Now()) - time.Duration(m.start)
 						log.Debug("Finish sync, listener will be paused", "current", m.currentNumber.Load(), "elapsed", common.PrettyDuration(elapsed), "progress", progress, "end", end, "last", m.lastNumber.Load())
 						//return
@@ -808,24 +798,13 @@ func (m *Monitor) syncLastBlock() uint64 {
 
 			// batch blocks operation according service category
 			for _, rpcBlock := range blocks {
-				if err := m.solve(rpcBlock); err != nil {
+				/*if err := m.solve(rpcBlock); err != nil {
 					log.Error("solve err", "err", err)
 					m.lastNumber.Store(i - 1)
 					return 0
-				}
-				i++
-				/*if len(m.taskCh) < cap(m.taskCh) {
-					m.taskCh <- rpcBlock
-					i++
-				} else {
-					m.lastNumber = i - 1
-					if maxNumber-minNumber > delay/2 {
-						elapsed := time.Duration(mclock.Now()) - time.Duration(start)
-						elapsedA := time.Duration(mclock.Now()) - time.Duration(m.start)
-						log.Warn("Chain segment frozen", "from", minNumber, "to", i, "range", uint64(i-minNumber), "current", uint64(m.currentNumber), "progress", float64(i)/float64(m.currentNumber), "last", m.lastNumber, "elapsed", common.PrettyDuration(elapsed), "bps", float64(i-minNumber)*1000*1000*1000/float64(elapsed), "bps_a", float64(maxNumber)*1000*1000*1000/float64(elapsedA), "cap", len(m.taskCh))
-					}
-					return 0
 				}*/
+				m.taskQueue(rpcBlock)
+				i++
 			}
 		} else {
 			rpcBlock, rpcErr := m.rpcBlockByNumber(i)
@@ -839,19 +818,8 @@ func (m *Monitor) syncLastBlock() uint64 {
 				m.lastNumber.Store(i - 1)
 				return 0
 			}
+			//m.taskQueue(rpcBlock)
 			i++
-			/*if len(m.taskCh) < cap(m.taskCh) {
-				m.taskCh <- rpcBlock
-				i++
-			} else {
-				m.lastNumber = i - 1
-				if maxNumber-minNumber > delay/2 {
-					elapsed := time.Duration(mclock.Now()) - time.Duration(start)
-					elapsedA := time.Duration(mclock.Now()) - time.Duration(m.start)
-					log.Warn("Chain segment frozen", "from", minNumber, "to", i, "range", uint64(i-minNumber), "current", uint64(m.currentNumber), "progress", float64(i)/float64(m.currentNumber), "last", m.lastNumber, "elapsed", common.PrettyDuration(elapsed), "bps", float64(i-minNumber)*1000*1000*1000/float64(elapsed), "bps_a", float64(maxNumber)*1000*1000*1000/float64(elapsedA), "cap", len(m.taskCh))
-				}
-				return 0
-			}*/
 		}
 	}
 	log.Debug("Last number changed", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch)
