@@ -297,12 +297,13 @@ func (m *Monitor) taskLoop() {
 			//	m.newTaskHook(task)
 			//}
 
-			if err := m.solve(task); err != nil {
+			/*if err := m.solve(task); err != nil {
 				m.errCh <- err
 				log.Warn("Block solved failed, try again", "err", err, "num", task.Number, "last", m.lastNumber.Load())
 			} else {
 				m.errCh <- nil
-			}
+			}*/
+			m.errCh <- m.solve(task)
 		case <-m.exitCh:
 			log.Info("Monitor task channel closed")
 			return
@@ -857,9 +858,6 @@ func (m *Monitor) taskQueue(task *types.Block) error {
 
 // solve block from node
 func (m *Monitor) solve(block *types.Block) error {
-	if block.Number%3000000 == 0 {
-		return errors.New("err test")
-	}
 	switch m.srv.Load() {
 	case SRV_MODEL:
 		return m.forModelService(block)
