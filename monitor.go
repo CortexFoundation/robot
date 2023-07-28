@@ -30,7 +30,7 @@ import (
 	"github.com/CortexFoundation/robot/backend"
 	"github.com/CortexFoundation/torrentfs/params"
 	"github.com/CortexFoundation/torrentfs/types"
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/ucwong/golang-kv"
 	"math"
 	"math/big"
@@ -77,8 +77,8 @@ type Monitor struct {
 	taskCh chan *types.Block
 	errCh  chan error
 	//newTaskHook func(*types.Block)
-	blockCache *lru.Cache
-	sizeCache  *lru.Cache
+	blockCache *lru.Cache[uint64, string]
+	sizeCache  *lru.Cache[string, uint64]
 	ckp        *params.TrustedCheckpoint
 	start      mclock.AbsTime
 
@@ -143,8 +143,8 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 	m.startNumber.Store(0)
 
 	m.terminated.Store(false)
-	m.blockCache, _ = lru.New(delay)
-	m.sizeCache, _ = lru.New(batch)
+	m.blockCache, _ = lru.New[uint64, string](delay)
+	m.sizeCache, _ = lru.New[string, uint64](batch)
 	m.listen = listen
 	m.callback = callback
 
@@ -380,8 +380,8 @@ func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) (result []*types.Block,
 }
 
 func (m *Monitor) getRemainingSize(address string) (uint64, error) {
-	if size, suc := m.sizeCache.Get(address); suc && size.(uint64) == 0 {
-		return size.(uint64), nil
+	if size, suc := m.sizeCache.Get(address); suc && size == 0 {
+		return size, nil
 	}
 	var remainingSize hexutil.Uint64
 	rpcUploadMeter.Mark(1)

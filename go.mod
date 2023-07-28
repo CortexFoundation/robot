@@ -7,7 +7,7 @@ require (
 	github.com/CortexFoundation/merkletree v0.0.0-20230724124840-b6e80265a137
 	github.com/CortexFoundation/torrentfs v1.0.52-0.20230711131012-594cb55f6538
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
+	github.com/hashicorp/golang-lru/v2 v2.0.5-0.20230705200825-f4cd393e7b29
 	github.com/ucwong/golang-kv v1.0.22-0.20230711090627-455356f3db9c
 	go.etcd.io/bbolt v1.3.7
 )
@@ -37,7 +37,6 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.4 // indirect
 	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
