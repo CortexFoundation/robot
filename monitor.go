@@ -75,6 +75,7 @@ type Monitor struct {
 	rpcWg         sync.WaitGroup
 
 	taskCh chan *types.Block
+	errCh  chan error
 	//newTaskHook func(*types.Block)
 	blockCache *lru.Cache
 	sizeCache  *lru.Cache
@@ -128,6 +129,7 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		//taskCh:        make(chan *types.Block, 1),
 		//start: mclock.Now(),
 	}
+	m.errCh = make(chan error, m.scope)
 
 	// TODO https://github.com/ucwong/golang-kv
 	if fs_, err := backend.NewChainDB(flag); err != nil {
@@ -285,10 +287,6 @@ func (m *Monitor) indexInit() error {
 	return nil
 }
 
-func (m *Monitor) taskQueue(task *types.Block) {
-	m.taskCh <- task
-}
-
 func (m *Monitor) taskLoop() {
 	log.Info("Task channel started")
 	defer m.wg.Done()
@@ -300,8 +298,10 @@ func (m *Monitor) taskLoop() {
 			//}
 
 			if err := m.solve(task); err != nil {
-				m.lastNumber.Store(task.Number - 1)
-				log.Warn("Block solved failed, try again", "err", err, "num", task.Number)
+				m.errCh <- err
+				log.Warn("Block solved failed, try again", "err", err, "num", task.Number, "last", m.lastNumber.Load())
+			} else {
+				m.errCh <- nil
 			}
 		case <-m.exitCh:
 			log.Info("Monitor task channel closed")
@@ -798,14 +798,28 @@ func (m *Monitor) syncLastBlock() uint64 {
 
 			// batch blocks operation according service category
 			for _, rpcBlock := range blocks {
-				/*if err := m.solve(rpcBlock); err != nil {
-					log.Error("solve err", "err", err)
-					m.lastNumber.Store(i - 1)
+				//if err := m.solve(rpcBlock); err != nil {
+				if err := m.taskQueue(rpcBlock); err != nil {
+					//m.lastNumber.Store(i - m.scope)
+					log.Error("solve err", "err", err, "last", m.lastNumber.Load())
 					return 0
-				}*/
-				m.taskQueue(rpcBlock)
-				i++
+				}
+				//i++
 			}
+
+			for n := 0; n < len(blocks); n++ {
+				select {
+				case err := <-m.errCh:
+					if err != nil {
+						log.Error("solve err", "err", err, "last", m.lastNumber.Load(), "i", i, "scope", m.scope, "min", minNumber, "max", maxNumber, "cur", currentNumber)
+						return 0
+					}
+				case <-m.exitCh:
+					log.Info("Task checker quit")
+					return 0
+				}
+			}
+			i += uint64(len(blocks))
 		} else {
 			rpcBlock, rpcErr := m.rpcBlockByNumber(i)
 			if rpcErr != nil {
@@ -824,8 +838,6 @@ func (m *Monitor) syncLastBlock() uint64 {
 	}
 	log.Debug("Last number changed", "min", minNumber, "max", maxNumber, "cur", currentNumber, "last", m.lastNumber.Load(), "batch", batch)
 	m.lastNumber.Store(maxNumber)
-	//m.storeLastNumber(maxNumber)
-	//if maxNumber-minNumber > batch-1 {
 	if maxNumber-minNumber > delay {
 		elapsedA := time.Duration(mclock.Now()) - time.Duration(m.start)
 		log.Debug("Chain segment frozen", "from", minNumber, "to", maxNumber, "range", uint64(maxNumber-minNumber), "current", uint64(m.CurrentNumber()), "progress", float64(maxNumber)/float64(m.CurrentNumber()), "last", m.lastNumber.Load(), "bps", float64(maxNumber)*1000*1000*1000/float64(elapsedA), "elapsed", common.PrettyDuration(elapsedA))
@@ -833,8 +845,21 @@ func (m *Monitor) syncLastBlock() uint64 {
 	return uint64(maxNumber - minNumber)
 }
 
+func (m *Monitor) taskQueue(task *types.Block) error {
+	select {
+	case m.taskCh <- task:
+	case <-m.exitCh:
+		return nil
+	}
+
+	return nil
+}
+
 // solve block from node
 func (m *Monitor) solve(block *types.Block) error {
+	if block.Number%3000000 == 0 {
+		return errors.New("err test")
+	}
 	switch m.srv.Load() {
 	case SRV_MODEL:
 		return m.forModelService(block)
