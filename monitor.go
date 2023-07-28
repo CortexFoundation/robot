@@ -124,13 +124,13 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		exitCh: make(chan any),
 		srvCh:  make(chan int),
 		//exitSyncCh: make(chan any),
-		scope:  uint64(math.Min(float64(runtime.NumCPU()), float64(8))),
-		taskCh: make(chan *types.Block, batch),
+		scope: uint64(math.Min(float64(runtime.NumCPU()), float64(8))),
+		//taskCh: make(chan *types.Block, batch),
 		//taskCh:        make(chan *types.Block, 1),
 		//start: mclock.Now(),
 	}
 	m.errCh = make(chan error, m.scope)
-
+	m.taskCh = make(chan *types.Block, m.scope)
 	// TODO https://github.com/ucwong/golang-kv
 	if fs_, err := backend.NewChainDB(flag); err != nil {
 		log.Error("file storage failed", "err", err)
@@ -942,7 +942,9 @@ func (m *Monitor) forExchangeService(block *types.Block) error {
 }
 
 func (m *Monitor) forRecordService(block *types.Block) error {
-	log.Debug("Block record", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
+	if block.Number%4096 == 0 {
+		log.Info("Block record", "num", block.Number, "hash", block.Hash, "txs", len(block.Txs), "last", m.lastNumber.Load())
+	}
 	if len(block.Txs) > 0 {
 		for _, t := range block.Txs {
 			x := new(big.Float).Quo(new(big.Float).SetInt(t.Amount), new(big.Float).SetInt(big.NewInt(params1.Cortex)))
