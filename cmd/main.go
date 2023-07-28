@@ -21,21 +21,23 @@ func main() {
 	cfg.DataDir = ".storage"
 	cfg.RpcURI = "http://127.0.0.1:8545"
 
+	var mm robot.IMonitor
 	if m, err := robot.New(cfg, true, false, false, nil); err != nil {
 		panic(err)
 	} else {
-		if err := m.Start(); err != nil {
+		mm = m
+		if err := mm.Start(); err != nil {
 			log.Error("start failed", "err", err)
 			panic(err)
 		}
-		defer m.Stop()
+		defer mm.Stop()
 
 		//m.SwitchService(robot.SRV_RECORD)
 		go func() {
 			for {
-				m.SwitchService(robot.SRV_RECORD)
+				mm.SwitchService(robot.SRV_RECORD)
 				time.Sleep(30 * time.Second)
-				m.SwitchService(robot.SRV_MODEL)
+				mm.SwitchService(robot.SRV_MODEL)
 				time.Sleep(30 * time.Second)
 				//m.SwitchService(robot.SRV_RECORD)
 			}
