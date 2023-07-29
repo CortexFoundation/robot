@@ -799,13 +799,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 
 			// batch blocks operation according service category
 			for _, rpcBlock := range blocks {
-				//if err := m.solve(rpcBlock); err != nil {
-				if err := m.taskQueue(rpcBlock); err != nil {
-					m.lastNumber.Store(i - 1)
-					log.Error("solve err", "err", err, "last", m.lastNumber.Load())
-					return 0
-				}
-				//i++
+				m.taskCh <- rpcBlock
 			}
 
 			for n := 0; n < len(blocks); n++ {
@@ -835,7 +829,6 @@ func (m *Monitor) syncLastBlock() uint64 {
 				m.lastNumber.Store(i - 1)
 				return 0
 			}
-			//m.taskQueue(rpcBlock)
 			i++
 		}
 	}
@@ -846,16 +839,6 @@ func (m *Monitor) syncLastBlock() uint64 {
 		log.Debug("Chain segment frozen", "from", minNumber, "to", maxNumber, "range", uint64(maxNumber-minNumber), "current", uint64(m.CurrentNumber()), "progress", float64(maxNumber)/float64(m.CurrentNumber()), "last", m.lastNumber.Load(), "bps", float64(maxNumber)*1000*1000*1000/float64(elapsedA), "elapsed", common.PrettyDuration(elapsedA))
 	}
 	return uint64(maxNumber - minNumber)
-}
-
-func (m *Monitor) taskQueue(task *types.Block) error {
-	select {
-	case m.taskCh <- task:
-	case <-m.exitCh:
-		return nil
-	}
-
-	return nil
 }
 
 // solve block from node
