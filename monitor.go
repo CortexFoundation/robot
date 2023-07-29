@@ -801,7 +801,7 @@ func (m *Monitor) syncLastBlock() uint64 {
 			for _, rpcBlock := range blocks {
 				//if err := m.solve(rpcBlock); err != nil {
 				if err := m.taskQueue(rpcBlock); err != nil {
-					//m.lastNumber.Store(i - m.scope)
+					m.lastNumber.Store(i - 1)
 					log.Error("solve err", "err", err, "last", m.lastNumber.Load())
 					return 0
 				}
@@ -812,10 +812,12 @@ func (m *Monitor) syncLastBlock() uint64 {
 				select {
 				case err := <-m.errCh:
 					if err != nil {
+						m.lastNumber.Store(i - 1)
 						log.Error("solve err", "err", err, "last", m.lastNumber.Load(), "i", i, "scope", m.scope, "min", minNumber, "max", maxNumber, "cur", currentNumber)
 						return 0
 					}
 				case <-m.exitCh:
+					m.lastNumber.Store(i - 1)
 					log.Info("Task checker quit")
 					return 0
 				}
