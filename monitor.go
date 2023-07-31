@@ -616,33 +616,33 @@ func (m *Monitor) run() error {
 	//}
 	m.wg.Add(1)
 	go m.taskLoop()
-	//m.wg.Add(1)
-	//go m.listenLatestBlock()
+	m.wg.Add(1)
+	go m.listenLatestBlock()
 	m.wg.Add(1)
 	go m.syncLatestBlock()
 
 	return nil
 }
 
-/*func (m *Monitor) listenLatestBlock() {
+func (m *Monitor) listenLatestBlock() {
 	defer m.wg.Done()
-	timer := time.NewTimer(time.Second * queryTimeInterval)
+	timer := time.NewTimer(time.Second * params.QueryTimeInterval)
 	defer timer.Stop()
 	for {
 		select {
 		case <-timer.C:
 			m.currentBlock()
 			if m.local {
-				timer.Reset(time.Second * queryTimeInterval)
+				timer.Reset(time.Second * params.QueryTimeInterval)
 			} else {
-				timer.Reset(time.Second * queryTimeInterval * 10)
+				timer.Reset(time.Second * params.QueryTimeInterval * 10)
 			}
 		case <-m.exitCh:
-			log.Debug("Block listener stopped")
+			log.Info("Block listener stopped")
 			return
 		}
 	}
-}*/
+}
 
 func (m *Monitor) syncLatestBlock() {
 	defer m.wg.Done()
@@ -656,7 +656,6 @@ func (m *Monitor) syncLatestBlock() {
 				log.Error("Service switch failed", "srv", sv, "err", err)
 			}
 		case <-timer.C:
-			//m.currentBlock()
 			progress = m.syncLastBlock()
 			// Avoid sync in full mode, fresh interval may be less.
 			if progress >= delay {
@@ -734,10 +733,12 @@ func (m *Monitor) skip(i uint64) bool {
 }
 
 func (m *Monitor) syncLastBlock() uint64 {
-	currentNumber, err := m.currentBlock()
+	/*currentNumber, err := m.currentBlock()
 	if err != nil {
 		return 0
-	}
+	}*/
+
+	currentNumber := m.currentNumber.Load()
 
 	if currentNumber < m.lastNumber.Load() {
 		log.Warn("Fs sync rollback", "current", currentNumber, "last", m.lastNumber.Load(), "offset", m.lastNumber.Load()-currentNumber)
