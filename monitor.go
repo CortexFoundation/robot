@@ -30,7 +30,8 @@ import (
 	"github.com/CortexFoundation/robot/backend"
 	"github.com/CortexFoundation/torrentfs/params"
 	"github.com/CortexFoundation/torrentfs/types"
-	lru "github.com/hashicorp/golang-lru/v2/expirable"
+	//lru "github.com/hashicorp/golang-lru/v2/expirable"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/ucwong/golang-kv"
 	"math"
 	"math/big"
@@ -78,7 +79,8 @@ type Monitor struct {
 	taskCh chan *types.Block
 	errCh  chan error
 	//newTaskHook func(*types.Block)
-	blockCache *lru.LRU[uint64, string]
+	blockCache *lru.Cache[uint64, string]
+	//blockCache *lru.LRU[uint64, string]
 	//sizeCache  *lru.LRU[string, uint64]
 	ckp   *params.TrustedCheckpoint
 	start mclock.AbsTime
@@ -144,7 +146,8 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 	m.startNumber.Store(0)
 
 	m.terminated.Store(false)
-	m.blockCache = lru.NewLRU[uint64, string](delay, nil, time.Second*60)
+	//m.blockCache = lru.NewLRU[uint64, string](delay, nil, time.Second*60)
+	m.blockCache, _ = lru.New[uint64, string](delay)
 	//m.sizeCache = lru.NewLRU[string, uint64](batch, nil, time.Second*15)
 	m.listen = listen
 	m.callback = callback
