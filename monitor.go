@@ -30,8 +30,8 @@ import (
 	"github.com/CortexFoundation/robot/backend"
 	"github.com/CortexFoundation/torrentfs/params"
 	"github.com/CortexFoundation/torrentfs/types"
-	//lru "github.com/hashicorp/golang-lru/v2/expirable"
 	lru "github.com/hashicorp/golang-lru/v2"
+	ttl "github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/ucwong/golang-kv"
 	"math"
 	"math/big"
@@ -81,9 +81,9 @@ type Monitor struct {
 	//newTaskHook func(*types.Block)
 	blockCache *lru.Cache[uint64, string]
 	//blockCache *lru.LRU[uint64, string]
-	//sizeCache  *lru.LRU[string, uint64]
-	ckp   *params.TrustedCheckpoint
-	start mclock.AbsTime
+	sizeCache *ttl.LRU[string, uint64]
+	ckp       *params.TrustedCheckpoint
+	start     mclock.AbsTime
 
 	local  bool
 	listen bool
@@ -148,7 +148,7 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 	m.terminated.Store(false)
 	//m.blockCache = lru.NewLRU[uint64, string](delay, nil, time.Second*60)
 	m.blockCache, _ = lru.New[uint64, string](delay)
-	//m.sizeCache = lru.NewLRU[string, uint64](batch, nil, time.Second*15)
+	m.sizeCache = ttl.NewLRU[string, uint64](batch, nil, time.Second*60)
 	m.listen = listen
 	m.callback = callback
 
@@ -396,9 +396,9 @@ func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) (result []*types.Block,
 }
 
 func (m *Monitor) getRemainingSize(address string) (uint64, error) {
-	//if size, suc := m.sizeCache.Get(address); suc && size == 0 {
-	//	return size, nil
-	//}
+	if size, suc := m.sizeCache.Get(address); suc && size == 0 {
+		return size, nil
+	}
 	var remainingSize hexutil.Uint64
 	rpcUploadMeter.Mark(1)
 	if err := m.cl.Call(&remainingSize, "ctxc_getUpload", address, "latest"); err != nil {
@@ -406,7 +406,7 @@ func (m *Monitor) getRemainingSize(address string) (uint64, error) {
 	}
 	remain := uint64(remainingSize)
 	if remain == 0 {
-		//m.sizeCache.Add(address, remain)
+		m.sizeCache.Add(address, remain)
 	}
 	return remain, nil
 }
@@ -567,7 +567,7 @@ func (m *Monitor) Stop() error {
 	m.exit()
 	log.Info("Monitor is waiting to be closed")
 	m.blockCache.Purge()
-	//m.sizeCache.Purge()
+	m.sizeCache.Purge()
 
 	//log.Info("Fs client listener synchronizing closing")
 	//if err := m.dl.Close(); err != nil {
