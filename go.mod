@@ -5,27 +5,30 @@ go 1.20
 require (
 	github.com/CortexFoundation/CortexTheseus v1.10.46
 	github.com/CortexFoundation/merkletree v0.0.0-20230724124840-b6e80265a137
-	github.com/CortexFoundation/torrentfs v1.0.52-0.20230711131012-594cb55f6538
+	github.com/CortexFoundation/torrentfs v1.0.54-0.20230828094241-b6396d4130ec
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru/v2 v2.0.6-0.20230823180716-8f8764ff4ea3
-	github.com/ucwong/golang-kv v1.0.22-0.20230711090627-455356f3db9c
+	github.com/ucwong/golang-kv v1.0.23-0.20230827081935-0ebb6ae028c9
 	go.etcd.io/bbolt v1.3.7
 )
 
 require (
 	github.com/DataDog/zstd v1.5.6-0.20230622172052-ea68dcab66c0 // indirect
+	github.com/antlabs/stl v0.0.1 // indirect
+	github.com/antlabs/timer v0.0.11 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.10.0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
-	github.com/cockroachdb/pebble v0.0.0-20230721221451-fcaeb47a50e0 // indirect
+	github.com/cockroachdb/pebble v0.0.0-20230826001808-0b401ee526b8 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
-	github.com/cockroachdb/tokenbucket v0.0.0-20230613231145-182959a1fad6 // indirect
-	github.com/deckarep/golang-set/v2 v2.3.0 // indirect
-	github.com/dgraph-io/badger/v4 v4.0.2-0.20230612214140-c903578894e4 // indirect
+	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
+	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
+	github.com/dgraph-io/badger/v4 v4.2.1-0.20230808010956-340ba1ae4c03 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/getsentry/sentry-go v0.22.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
@@ -42,7 +45,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
-	github.com/nutsdb/nutsdb v0.12.4-0.20230628143711-3843ce89fa65 // indirect
+	github.com/nutsdb/nutsdb v0.13.2-0.20230824154404-d1808de99379 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
@@ -50,10 +53,11 @@ require (
 	github.com/prometheus/procfs v0.11.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/rosedblabs/go-immutable-radix/v2 v2.0.1-0.20230614125820-f2a7bc058c90 // indirect
-	github.com/rosedblabs/rosedb/v2 v2.2.1 // indirect
-	github.com/rosedblabs/wal v1.2.0 // indirect
+	github.com/rosedblabs/rosedb/v2 v2.2.2 // indirect
+	github.com/rosedblabs/wal v1.3.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	github.com/tidwall/btree v1.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/ucwong/go-ttlmap v1.0.2-0.20221020173635-331e7ddde2bb // indirect
@@ -64,7 +68,7 @@ require (
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
