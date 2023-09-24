@@ -31,6 +31,10 @@ func (fs *ChainDB) Blocks() []*types.Block {
 	return fs.blocks
 }
 
+func (fs *ChainDB) Txs() uint64 {
+	return fs.txs.Load()
+}
+
 func (fs *ChainDB) GetBlockByNumber(blockNum uint64) *types.Block {
 	var block types.Block
 

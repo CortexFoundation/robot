@@ -145,10 +145,6 @@ func (fs *ChainDB) Init() (err error) {
 	return
 }
 
-func (fs *ChainDB) Txs() uint64 {
-	return fs.txs.Load()
-}
-
 func (fs *ChainDB) Reset() error {
 	fs.blocks = nil
 	fs.checkPoint.Store(0)
@@ -165,10 +161,6 @@ func (fs *ChainDB) Close() error {
 	log.Info("File DB Closed", "database", fs.db.Path(), "last", fs.lastListenBlockNumber.Load())
 	return fs.Flush()
 }
-
-var (
-	ErrReadDataFromBoltDB = errors.New("bolt DB Read Error")
-)
 
 func (fs *ChainDB) Version() string {
 	return fs.version
