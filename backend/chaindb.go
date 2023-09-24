@@ -18,7 +18,6 @@ package backend
 
 import (
 	"encoding/binary"
-	"errors"
 	"github.com/CortexFoundation/merkletree"
 	"github.com/CortexFoundation/torrentfs/params"
 	"github.com/CortexFoundation/torrentfs/types"
@@ -145,7 +144,7 @@ func (fs *ChainDB) Init() (err error) {
 	return
 }
 
-func (fs *ChainDB) Reset() error {
+/*func (fs *ChainDB) Reset() error {
 	fs.blocks = nil
 	fs.checkPoint.Store(0)
 	fs.lastListenBlockNumber.Store(0)
@@ -154,7 +153,7 @@ func (fs *ChainDB) Reset() error {
 	}
 	log.Warn("Storage status reset")
 	return nil
-}
+}*/
 
 func (fs *ChainDB) Close() error {
 	defer fs.db.Close()
