@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"github.com/CortexFoundation/CortexTheseus/common"
-	"github.com/CortexFoundation/CortexTheseus/common/hexutil"
 	"github.com/CortexFoundation/CortexTheseus/common/mclock"
 	"github.com/CortexFoundation/CortexTheseus/log"
 	"github.com/CortexFoundation/CortexTheseus/metrics"
@@ -37,12 +36,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
-
-const (
-	batch   = 4096 * 2 //params.SyncBatch
-	delay   = 12       //params.Delay
-	timeout = 30 * time.Second
 )
 
 var (
@@ -506,25 +499,6 @@ func (m *Monitor) syncLatestBlock() {
 			return
 		}
 	}
-}
-
-func (m *Monitor) currentBlock() (uint64, bool, error) {
-	var (
-		currentNumber hexutil.Uint64
-		update        bool
-	)
-
-	rpcCurrentMeter.Mark(1)
-	if err := m.cl.Call(&currentNumber, "ctxc_blockNumber"); err != nil {
-		log.Error("Call ipc method ctxc_blockNumber failed", "error", err)
-		return m.currentNumber.Load(), false, err
-	}
-	if m.currentNumber.Load() != uint64(currentNumber) {
-		m.currentNumber.Store(uint64(currentNumber))
-		update = true
-	}
-
-	return uint64(currentNumber), update, nil
 }
 
 func (m *Monitor) skip(i uint64) bool {

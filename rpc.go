@@ -119,3 +119,22 @@ func (m *Monitor) getReceipt(tx string) (receipt types.Receipt, err error) {
 
 	return
 }
+
+func (m *Monitor) currentBlock() (uint64, bool, error) {
+	var (
+		currentNumber hexutil.Uint64
+		update        bool
+	)
+
+	rpcCurrentMeter.Mark(1)
+	if err := m.cl.Call(&currentNumber, "ctxc_blockNumber"); err != nil {
+		log.Error("Call ipc method ctxc_blockNumber failed", "error", err)
+		return m.currentNumber.Load(), false, err
+	}
+	if m.currentNumber.Load() != uint64(currentNumber) {
+		m.currentNumber.Store(uint64(currentNumber))
+		update = true
+	}
+
+	return uint64(currentNumber), update, nil
+}
