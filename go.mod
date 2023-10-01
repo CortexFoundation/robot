@@ -7,7 +7,7 @@ require (
 	github.com/CortexFoundation/merkletree v0.0.0-20230724124840-b6e80265a137
 	github.com/CortexFoundation/torrentfs v1.0.54-0.20230828094241-b6396d4130ec
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/golang-lru/v2 v2.0.7-0.20230914134745-d46c1d97e263
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/ucwong/golang-kv v1.0.23-0.20230827081935-0ebb6ae028c9
 	go.etcd.io/bbolt v1.3.7
 )
