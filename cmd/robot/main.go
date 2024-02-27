@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/CortexFoundation/CortexTheseus/log"
-	"github.com/CortexFoundation/robot"
 	"github.com/CortexFoundation/torrentfs/params"
+
+	"github.com/CortexFoundation/robot"
 )
 
 func main() {
