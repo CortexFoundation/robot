@@ -13,10 +13,7 @@ import (
 )
 
 func main() {
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
-	glogger.Verbosity(log.LvlInfo)
-	glogger.Vmodule("")
-	log.Root().SetHandler(glogger)
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelInfo, true)))
 
 	cfg := &params.DefaultConfig
 	cfg.DataDir = ".storage"
