@@ -78,9 +78,9 @@ func (m *Monitor) rpcBlockByNumber(blockNumber uint64) (*types.Block, error) {
 	return nil, err //errors.New("[ Internal IPC Error ] try to get block out of times")
 }
 
-func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) (result []*types.Block, err error) {
+func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) ([]*types.Block, error) {
 	batch := to - from
-	result = make([]*types.Block, batch)
+	result := make([]*types.Block, batch)
 	reqs := make([]rpc.BatchElem, batch)
 	for i := range reqs {
 		reqs[i] = rpc.BatchElem{
@@ -90,7 +90,9 @@ func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) (result []*types.Block,
 		}
 	}
 
-	err = m.cl.BatchCall(reqs)
+	if err := m.cl.BatchCall(reqs); err != nil {
+		return nil, err
+	}
 
 	for i := range reqs {
 		if reqs[i].Error != nil {
@@ -101,7 +103,7 @@ func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) (result []*types.Block,
 		}
 	}
 
-	return
+	return result, nil
 }
 
 func (m *Monitor) rpcBatchBlockByNumberLegacy(from, to uint64) (result []*types.Block, err error) {
