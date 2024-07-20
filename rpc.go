@@ -17,7 +17,9 @@
 package robot
 
 import (
+	//"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -79,11 +81,38 @@ func (m *Monitor) rpcBlockByNumber(blockNumber uint64) (*types.Block, error) {
 func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) (result []*types.Block, err error) {
 	batch := to - from
 	result = make([]*types.Block, batch)
+	reqs := make([]rpc.BatchElem, batch)
+	for i := range reqs {
+		reqs[i] = rpc.BatchElem{
+			Method: "ctxc_getBlockByNumber",
+			Args:   []any{hexutil.EncodeUint64(from + uint64(i)), true},
+			Result: &result[i],
+		}
+	}
+
+	err = m.cl.BatchCall(reqs)
+
+	for i := range reqs {
+		if reqs[i].Error != nil {
+			return nil, reqs[i].Error
+		}
+		if result[i] == nil {
+			return nil, fmt.Errorf("got null block %d", i)
+		}
+	}
+
+	return
+}
+
+func (m *Monitor) rpcBatchBlockByNumberLegacy(from, to uint64) (result []*types.Block, err error) {
+	batch := to - from
+	result = make([]*types.Block, batch)
 	var e error = nil
 	for i := 0; i < int(batch); i++ {
 		m.rpcWg.Add(1)
 		go func(index int) {
 			defer m.rpcWg.Done()
+			//log.Info("bach rpc", "from", from, "to", to, "i", index)
 			result[index], e = m.rpcBlockByNumber(from + uint64(index))
 			if e != nil {
 				err = e
