@@ -17,7 +17,7 @@
 package robot
 
 import (
-	//"context"
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -90,7 +90,9 @@ func (m *Monitor) rpcBatchBlockByNumber(from, to uint64) ([]*types.Block, error)
 		}
 	}
 
-	if err := m.cl.BatchCall(reqs); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := m.cl.BatchCallContext(ctx, reqs); err != nil {
 		return nil, err
 	}
 
