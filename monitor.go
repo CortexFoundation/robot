@@ -110,7 +110,7 @@ func New(flag *params.Config, cache, compress, listen bool, callback chan any) (
 		exitCh: make(chan any),
 		srvCh:  make(chan int),
 		//exitSyncCh: make(chan any),
-		scope: uint64(math.Max(float64(runtime.NumCPU()*2), float64(4))),
+		scope: uint64(math.Max(float64(runtime.NumCPU()*2), float64(8))),
 		//taskCh: make(chan *types.Block, batch),
 		//taskCh:        make(chan *types.Block, 1),
 		//start: mclock.Now(),
