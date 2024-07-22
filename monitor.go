@@ -589,7 +589,8 @@ func (m *Monitor) syncLastBlock() uint64 {
 				m.taskCh <- rpcBlock
 			}
 
-			for n := 0; n < len(blocks); n++ {
+			size := len(blocks)
+			for n := 0; n < size; n++ {
 				select {
 				case err := <-m.errCh:
 					if err != nil {
@@ -603,8 +604,8 @@ func (m *Monitor) syncLastBlock() uint64 {
 					return 0
 				}
 			}
-			i += uint64(len(blocks))
-			counter += len(blocks)
+			i += uint64(size)
+			counter += size
 		} else {
 			rpcBlock, rpcErr := m.rpcBlockByNumber(i)
 			if rpcErr != nil {
