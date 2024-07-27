@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
+	//"strconv"
 	"time"
 
 	"github.com/CortexFoundation/CortexTheseus/common/hexutil"
@@ -72,7 +72,7 @@ func (m *Monitor) rpcBlockByNumber(blockNumber uint64) (*types.Block, error) {
 	rpcBlockMeter.Mark(1)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err := m.cl.CallContext(ctx, block, "ctxc_getBlockByNumber", "0x"+strconv.FormatUint(blockNumber, 16), true)
+	err := m.cl.CallContext(ctx, block, "ctxc_getBlockByNumber", hexutil.EncodeUint64(blockNumber), true)
 	if err == nil {
 		return block, nil
 	}
