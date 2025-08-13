@@ -485,9 +485,9 @@ func (m *Monitor) syncLatestBlock() {
 			timer.Reset(nextDelay)
 
 			// Log status periodically
-			counter++
-			if counter%100 == 0 {
-				log.Info("Monitor status", "blocks", progress, "current", m.CurrentNumber(), "latest", m.lastNumber.Load(), "txs", m.fs.Txs(), "ckp", m.fs.CheckPoint(), "last", m.fs.LastListenBlockNumber())
+			counter += int(progress)
+			if counter > 65536 {
+				log.Info("Monitor status", "blocks", progress, "current", m.CurrentNumber(), "latest", m.lastNumber.Load(), "txs", m.fs.Txs(), "ckp", m.fs.CheckPoint(), "last", m.fs.LastListenBlockNumber(), "progress", progress)
 				counter = 0
 			}
 
