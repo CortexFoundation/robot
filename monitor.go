@@ -493,7 +493,7 @@ func (m *Monitor) syncLatestBlock() {
 				counter = 0
 			}
 			// Always flush at the end of a timer cycle
-			m.fs.Anchor(m.lastNumber.Load())
+			//m.fs.Anchor(m.lastNumber.Load())
 			//m.fs.Flush()
 
 		case <-m.exitCh:
