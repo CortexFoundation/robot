@@ -20,7 +20,7 @@ func main() {
 
 	// 2. Make a batch request
 	var (
-		balance big.Int
+		balance *big.Int
 		nonce   uint64
 	)
 	if err := client.Call(
@@ -30,5 +30,5 @@ func main() {
 		// handle error
 	}
 
-	fmt.Printf("balance: %s\nnonce: %d\n", w3.FromWei(&balance, 18), nonce)
+	fmt.Printf("balance: %s\nnonce: %d\n", w3.FromWei(balance, 18), nonce)
 }
